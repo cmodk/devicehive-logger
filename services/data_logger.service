@@ -1,6 +1,5 @@
 [Unit]
 Description=Datalogger for AECloud
-After=setup-time.service
 
 [Service]
 Type=simple

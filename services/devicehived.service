@@ -1,6 +1,6 @@
 [Unit]
 Description=Devicehive interface for AECloud
-After=setup-time.service
+After=network.target
 
 [Service]
 Type=simple
