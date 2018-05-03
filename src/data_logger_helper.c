@@ -21,7 +21,7 @@ int data_logger_mq_init(void){
     printf("Maximum bytes in queue: %d\n",mq_info.msg_qbytes);
     mq_info.msg_qbytes=1024*1024;
 
-    if(msgctl,mq,IPC_SET, &mq_info){
+    if(msgctl(mq,IPC_SET, &mq_info)){
       perror("Could not set new size for message queue");
       return -1;
     }
