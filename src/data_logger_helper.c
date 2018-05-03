@@ -23,7 +23,7 @@ int log_double(int mq, char *guid, char *stream, long long timestamp, double val
 
 	
 
-	printf("Trying to send double value: %s -> %s -> %lld -> %f\n",guid,stream,timestamp,value);
+	debug_printf("Trying to send double value: %s -> %s -> %lld -> %f\n",guid,stream,timestamp,value);
 
 	if(guid==NULL || strlen(guid)==0){
 		print_error("Missing guid\n");

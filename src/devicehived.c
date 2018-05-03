@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
 #include <curl/curl.h>
 
 #include "debug.h"
@@ -14,6 +16,11 @@ void signal_handler(int signo) {
 	do_run=0;
 }
 
+size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+     return size * nmemb;
+}
+
 int post_data_priv(char *path, char *data, char *method){
 	CURL *curl;
 	CURLcode res;
@@ -21,7 +28,7 @@ int post_data_priv(char *path, char *data, char *method){
 	char url[2048];
 
 	sprintf(url,"https://hive.ae101.net/%s",path);
-	printf("Sending '%s' to '%s'\n",data,url);
+	debug_printf("Sending '%s' to '%s'\n",data,url);
 
 	/* get a curl handle */ 
 	curl = curl_easy_init();
@@ -42,6 +49,8 @@ int post_data_priv(char *path, char *data, char *method){
 		if(method!=NULL){
 			curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, method); /* !!! */
 		}
+
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 
 		/* Perform the request, res will get the return code */ 
 		res = curl_easy_perform(curl);
@@ -90,23 +99,23 @@ int send_double_callback(void *handle, int argc, char **argv, char **col_name){
 	char url[1024];
 	sqlite3 *db = (sqlite3 *)handle;
 
-	printf("Double callback: %d\n",argc);
+	debug_printf("Double callback: %d\n",argc);
 	if(argc==6){
 		id=strtoll(argv[0],NULL,10);
-		printf("Id: %lld\n",id);
+		debug_printf("Id: %lld\n",id);
 		sprintf(guid,"%s",argv[1]);
-		printf("GUID: %s\n",guid);
+		debug_printf("GUID: %s\n",guid);
 		sprintf(stream,"%s",argv[2]);
-		printf("Stream: %s\n",stream);
+		debug_printf("Stream: %s\n",stream);
 		timestamp=strtoll(argv[3],NULL,10);
-		printf("Timestamp: %lld\n",timestamp);
+		debug_printf("Timestamp: %lld\n",timestamp);
 		value=atof(argv[4]);
-		printf("Value: %f\n",value);
+		debug_printf("Value: %f\n",value);
 		getRFC3339(timestamp,timebuf);
-		printf("Timebuf: %s\n",timebuf);
+		debug_printf("Timebuf: %s\n",timebuf);
 
 		sprintf(data,"{\"notification\":\"stream\",\"parameters\":{\"stream\":\"%s\",\"value\":%f,\"timestamp\":\"%s\"}}",stream,value,timebuf);
-		printf("Posting %s\n",data);
+		debug_printf("Posting %s\n",data);
 		
 		sprintf(url,"device/%s/notification",guid);
 		post_data(url,data);
@@ -144,31 +153,33 @@ int main(int argc, char *argv[]){
 
 	do_run=1;
 	while(do_run){
-		retval=sqlite3_exec(db,"SELECT * FROM stream_data WHERE is_logged=0 ORDER BY id DESC LIMIT 20;",send_double_callback, db, &sql_err);
+		
+    //Check for commands
+    do{
+      memset(data,0,MQ_MAX_SIZE);
+      retval=msgrcv(mq,data,MQ_MAX_SIZE-sizeof(long),0,IPC_NOWAIT);
+      if(retval==-1){
+        if(errno!=ENOMSG) {
+          perror("MQ error");
+        }
+      }else{
+        if(retval>0){
+          dummy=(dummy_msg_t *)data;
+          switch(dummy->mtype){
+            case 1:
+              rd_msg=(dh_device_register_msg_t *)data;
+              dh_device_register(rd_msg->guid);
+              break;
+          }
+        }
+      }
+    }while(retval!=-1);
 
+    retval=sqlite3_exec(db,"SELECT * FROM stream_data WHERE is_logged=0 LIMIT 5;",send_double_callback, db, &sql_err);
 		if(retval != SQLITE_OK){
 			printf("Select error: %s\n",sql_err);
 			sqlite3_free(sql_err);
 		}
-
-		//Check for commands
-		memset(data,0,MQ_MAX_SIZE);
-		retval=msgrcv(mq,data,MQ_MAX_SIZE-sizeof(long),0,IPC_NOWAIT);
-		if(retval==-1){
-			perror("MQ error");
-		}else{
-			if(retval>0){
-				dummy=(dummy_msg_t *)data;
-				switch(dummy->mtype){
-					case 1:
-						rd_msg=(dh_device_register_msg_t *)data;
-						dh_device_register(rd_msg->guid);
-						break;
-				}
-			}
-		}
-
-
 		usleep(100000);
 	}
 	

@@ -52,3 +52,4 @@ src/data_logger
 test/data_logger_test
 config.status
 config.log
+libtool

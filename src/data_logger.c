@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <time.h>
 #include <errno.h>
 #include <signal.h>
@@ -31,6 +32,8 @@ int main(int argc, char *argv[]) {
 	sqlite3_stmt *stmt;
 	long long last_clean=0;
 	long long now;
+  struct msqid_ds mq_info;
+  int lock_count;
 
 	system("echo 1024000 > /proc/sys/kernel/msgmax");
 	system("echo 1024000 > /proc/sys/kernel/msgmnb");
@@ -38,6 +41,22 @@ int main(int argc, char *argv[]) {
 	if((mq=data_logger_mq_init()) == -1){
 		return -1;
 	}
+
+  if(msgctl(mq, IPC_STAT, &mq_info)!=0){
+    perror("Could not get status for message queue");
+    return -1;
+  }
+  
+  if(mq_info.msg_qbytes<512*1024) {
+    printf("Maximum bytes in queue: %d\n",mq_info.msg_qbytes);
+    mq_info.msg_qbytes=1024*1024;
+
+    if(msgctl,mq,IPC_SET, &mq_info){
+      perror("Could not set new size for message queue");
+      return -1;
+    }
+  }
+  
 		
 
 	if((db=sql_open())==NULL){
@@ -66,9 +85,9 @@ int main(int argc, char *argv[]) {
 		dummy=(dummy_msg_t *)data;
 		switch(dummy->mtype){
 			case 1:
-				printf("Got stream update\n");
+				debug_printf("Got stream update\n");
 				stream_msg=(stream_update_msg_t *)dummy;
-				printf("Guid: %s, T: %lld, S: %s, V: %f\n",
+				debug_printf("Guid: %s, T: %lld, S: %s, V: %f\n",
 						stream_msg->guid,
 						stream_msg->timestamp,
 						stream_msg->stream,
@@ -80,18 +99,24 @@ int main(int argc, char *argv[]) {
 				sqlite3_bind_int(stmt,5,0);
 
 				ts=getTimestampMs(NULL);
+        lock_count=0;
 				do{
 					retval=sqlite3_step(stmt);
 					if(retval!=SQLITE_DONE){
-						print_fatal("Could not insert data\n");
-						printf("Retval: %d\n",retval);
-						usleep(1203);
+            if(retval==SQLITE_BUSY){
+              if((++lock_count)%10000 == 0) {
+                print_error("Database locked, tried %d times\n",lock_count);
+              }
+            }else{
+  						print_fatal("Could not insert data: %d\n",retval);
+            }
+            usleep(1341);
 					}
 				}while(retval!=SQLITE_DONE);
 				sqlite3_reset(stmt);
 				te=getTimestampMs(NULL);
 
-				printf("Insert time: %lldms\n",te-ts);
+				debug_printf("Insert time: %lldms\n",te-ts);
 
 				break;
 		}

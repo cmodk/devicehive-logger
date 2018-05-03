@@ -36,7 +36,7 @@ int sql_exec(sqlite3 *db, char *query){
 	char *zErrMsg = 0;
 	int r;
 
-	printf("Executing: %s\n",query);
+	debug_printf("Executing: %s\n",query);
 	do {
 		r = sqlite3_exec(db, query, callback, 0, &zErrMsg);
 		if(r){
