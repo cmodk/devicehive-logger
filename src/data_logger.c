@@ -32,7 +32,6 @@ int main(int argc, char *argv[]) {
 	sqlite3_stmt *stmt;
 	long long last_clean=0;
 	long long now;
-  struct msqid_ds mq_info;
   int lock_count;
 
 	system("echo 1024000 > /proc/sys/kernel/msgmax");
@@ -42,22 +41,7 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-  if(msgctl(mq, IPC_STAT, &mq_info)!=0){
-    perror("Could not get status for message queue");
-    return -1;
-  }
-  
-  if(mq_info.msg_qbytes<512*1024) {
-    printf("Maximum bytes in queue: %d\n",mq_info.msg_qbytes);
-    mq_info.msg_qbytes=1024*1024;
-
-    if(msgctl,mq,IPC_SET, &mq_info){
-      perror("Could not set new size for message queue");
-      return -1;
-    }
-  }
-  
-		
+  		
 
 	if((db=sql_open())==NULL){
 		print_fatal("Could not open database\n");
