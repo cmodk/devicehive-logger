@@ -25,11 +25,17 @@ sqlite3 *sql_open(void){
 	sql_exec(db,(char *)"PRAGMA encoding = \"UTF-8\"");
 
 
-	if(sql_exec(db,STREAM_TABLE)) {
-		print_fatal("Could not create table for streams\n");
-		return NULL;
-	}
-	return db;
+  if(sql_exec(db,STREAM_TABLE)) {
+    print_fatal("Could not create table for streams\n");
+    return NULL;
+  }
+
+  if(sql_exec(db,STREAM_STRING_TABLE)) {
+    print_fatal("Could not create table for string streams\n");
+    return NULL;
+  }
+
+  return db;
 }
 
 int sql_exec(sqlite3 *db, char *query){

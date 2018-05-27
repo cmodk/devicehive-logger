@@ -15,6 +15,15 @@
 	"value REAL," \
 	"is_logged INT);"	
 
+#define STREAM_STRING_TABLE "CREATE TABLE IF NOT EXISTS stream_string_data("\
+	"id INTEGER PRIMARY KEY AUTOINCREMENT,"\
+	"guid TEXT,"\
+	"stream TEXT,"\
+	"timestamp INT,"\
+	"value TEXT," \
+	"is_logged INT);"	
+
+
 typedef struct {
 	long mtype;
 	char data[MQ_MAX_SIZE];
