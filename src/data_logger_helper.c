@@ -56,4 +56,46 @@ int log_double(int mq, char *guid, char *stream, long long timestamp, double val
 
 }
 
+int log_string(int mq, char *guid, char *stream, long long timestamp, char *value){
+
+	char device_name[1024];
+	char data[2048];
+	char timebuf[100];
+	stream_string_update_msg_t stream_msg;
+
+	
+
+	debug_printf("Trying to send double value: %s -> %s -> %lld -> %f\n",guid,stream,timestamp,value);
+
+	if(guid==NULL || strlen(guid)==0){
+		print_error("Missing guid\n");
+		return -1;
+	}
+
+	if(stream==NULL || strlen(stream)==0){
+		print_error("Missing stream name\n");
+		return -1;
+	}
+
+	
+	getRFC3339(timestamp,timebuf);
+	stream_msg.mtype=2;
+	sprintf(stream_msg.guid,guid);
+	sprintf(stream_msg.stream,stream);
+	sprintf(stream_msg.value,value);
+	if(timestamp!=-1){
+		stream_msg.timestamp=timestamp;
+	}else{
+		stream_msg.timestamp=getTimestampMs(NULL);
+	}
+
+	if(msgsnd(mq,&stream_msg,sizeof(stream_msg)-sizeof(long),0)){
+		perror("Could not send log value");
+		return -1;
+	}
+
+	return 0;
+
+}
+
 
