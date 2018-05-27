@@ -39,17 +39,28 @@ sqlite3 *sql_open(void){
 }
 
 int sql_exec(sqlite3 *db, char *query){
-	char *zErrMsg = 0;
-	int r;
+  char *zErrMsg = 0;
+  int lock_count=0;
+  int r;
 
-	debug_printf("Executing: %s\n",query);
-	do {
-		r = sqlite3_exec(db, query, callback, 0, &zErrMsg);
-		if(r){
-			print_error("Error executing: %s -> %s\n",query,zErrMsg);
-			return -1;
-		}
-	}while(r==SQLITE_BUSY);
+  debug_printf("Executing: %s\n",query);
+  do {
+    r = sqlite3_exec(db, query, callback, 0, &zErrMsg);
+    if(r){
+      if(r==SQLITE_BUSY){
+        if((++lock_count)%10000 == 0) {
+          print_error("Database locked, tried %d times\n",lock_count);
+        }
 
-	return 0;
+      }else{
+        print_error("Error executing: %s -> %s\n",query,zErrMsg);
+        sqlite3_free(zErrMsg);
+        return -1;
+      }
+    }
+    sqlite3_free(zErrMsg);
+  }while(r==SQLITE_BUSY);
+  
+
+  return 0;
 }
