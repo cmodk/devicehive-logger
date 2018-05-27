@@ -2,27 +2,27 @@
 #include "debug.h"
 
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
-	int i;
-	for(i=0; i<argc; i++){
-		printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-	}
-	printf("\n");
-	return 0;
+  int i;
+  for(i=0; i<argc; i++){
+    printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+  }
+  printf("\n");
+  return 0;
 }
 
 sqlite3 *sql_open(void){
-	sqlite3 *db;
-	int retval;
+  sqlite3 *db;
+  int retval;
 
-	retval=sqlite3_open("/var/lib/data_logger.db",&db);
-	if(retval){
-		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
-		return NULL;
-	}
+  retval=sqlite3_open("/var/lib/data_logger.db",&db);
+  if(retval){
+    fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+    return NULL;
+  }
 
-	sql_exec(db,(char *)"PRAGMA synchronous = OFF");
-	sql_exec(db,(char *)"PRAGMA journal_mode = MEMORY");
-	sql_exec(db,(char *)"PRAGMA encoding = \"UTF-8\"");
+  sql_exec(db,(char *)"PRAGMA synchronous = OFF");
+  sql_exec(db,(char *)"PRAGMA journal_mode = MEMORY");
+  sql_exec(db,(char *)"PRAGMA encoding = \"UTF-8\"");
 
 
   if(sql_exec(db,STREAM_TABLE)) {
