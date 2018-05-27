@@ -22,7 +22,7 @@ common_CFLAGS="\
 	-I../src \
 	-Wall"
 AC_SUBST([common_CFLAGS])
-common_LDFLAGS="-lrt -lsqlite3 -lcurl"
+common_LDFLAGS="-lrt -lsqlite3 -lcurl -ljson-c"
 AC_SUBST([common_LDFLAGS])
 
 AC_CONFIG_FILES([Makefile  src/Makefile test/Makefile])
