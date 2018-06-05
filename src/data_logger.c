@@ -65,23 +65,6 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-  if(msgctl(mq, IPC_STAT, &mq_info)!=0){
-    perror("Could not get status for message queue");
-    return -1;
-  }
-  
-  if(mq_info.msg_qbytes<512*1024*5) {
-    printf("Maximum bytes in queue: %d\n",mq_info.msg_qbytes);
-    mq_info.msg_qbytes=1024*1024*5;
-
-    if(msgctl,mq,IPC_SET, &mq_info){
-      perror("Could not set new size for message queue");
-      return -1;
-    }
-  }
-  
-		
-
 	if((db=sql_open())==NULL){
 		print_fatal("Could not open database\n");
 		return -1;

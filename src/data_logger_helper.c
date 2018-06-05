@@ -12,15 +12,18 @@ int data_logger_mq_init(void){
 		return -1;
 	}
 
+  debug_printf("Datalogger MQ: %d\n",mq);
+
   if(msgctl(mq, IPC_STAT, &mq_info)!=0){
     perror("Could not get status for message queue");
     return -1;
   }
   
   if(mq_info.msg_qbytes<512*1024) {
-    printf("Maximum bytes in queue: %d\n",mq_info.msg_qbytes);
-    mq_info.msg_qbytes=1024*1024;
+    printf("Maximum bytes in queue: %ld\n",mq_info.msg_qbytes);
+    mq_info.msg_qbytes=1024*1024*5;
 
+    debug_printf("MQ: %d\n",mq);
     if(msgctl(mq,IPC_SET, &mq_info)){
       perror("Could not set new size for message queue");
       return -1;
