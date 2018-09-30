@@ -76,6 +76,7 @@ long post_data_priv(const char *path, char *data, char *method){
 		debug_printf("Curl res: %d\n",res);
 		debug_printf("Curl Status code: %ld\n",http_code);
 		/* always cleanup */ 
+    curl_slist_free_all(headers);
 	}
 
   return http_code;
@@ -341,6 +342,7 @@ int send_strings_to_hive(sqlite3 *db){
     }
 
 
+    json_object_put(device);
     debug_printf("Posting %s\n",str);
   }
   json_object_put(devices);
