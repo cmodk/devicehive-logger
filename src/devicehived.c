@@ -29,6 +29,7 @@ void signal_handler(int signo) {
 
 size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
+    debug_printf("write_data[%d][%d]: %s\n",size,nmemb,buffer);
      return size * nmemb;
 }
 
@@ -56,8 +57,10 @@ long post_data_priv(const char *path, char *data, char *method){
 		struct curl_slist *headers = NULL;
 		headers = curl_slist_append(headers, "Authorization: Bearer TestToken");
 		headers = curl_slist_append(headers, "Content-Type: application/json");
+    debug_printf("Slist: 0x%08x\n",headers);
 		res = curl_easy_setopt(curl, CURLOPT_HTTPHEADER,headers);
 
+    debug_printf("Method: %s\n",method);
 		if(method!=NULL){
 			curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, method); /* !!! */
 		}
@@ -67,10 +70,13 @@ long post_data_priv(const char *path, char *data, char *method){
 		/* Perform the request, res will get the return code */ 
   debug_printf("curl_easy_perform\n");
 		res = curl_easy_perform(curl);
+    debug_printf("res: %d\n");
 		/* Check for errors */ 
 		if(res != CURLE_OK)
 			fprintf(stderr, "curl_easy_perform() failed: %s\n",
 					curl_easy_strerror(res));
+
+    debug_printf("res: %d\n");
 
 		curl_easy_getinfo (curl, CURLINFO_RESPONSE_CODE, &http_code);
 		debug_printf("Curl res: %d\n",res);
@@ -311,16 +317,20 @@ int send_strings_to_hive(sqlite3 *db){
   json_object *devices;
   json_object *ids;
   json_object *notification;
-
+  
+  debug_printf("Getting strings from database\n");
     devices=json_object_new_object();
-  retval=sqlite3_exec(db,"SELECT * FROM stream_string_data WHERE is_logged=0 LIMIT 1000;",send_string_callback, &devices, &sql_err);
+  retval=sqlite3_exec(db,"SELECT * FROM stream_string_data WHERE is_logged=0 LIMIT 100;",send_string_callback, &devices, &sql_err);
   if(retval != SQLITE_OK){
     printf("Select error: %s\n",sql_err);
     sqlite3_free(sql_err);
     return -1;
   }	
+
+  debug_printf("Freeing sql error\n");
   sqlite3_free(sql_err);
 
+  debug_printf("Creating json object for strings\n");
   json_object_object_foreach(devices,guid,device){
     debug_printf("Key: %s\n",guid);
     check_known_devices(guid);
@@ -340,13 +350,13 @@ int send_strings_to_hive(sqlite3 *db){
       print_error("Could not post notifications: %ld\n",http_code);
       return -1;
     }
+    debug_printf("Posting %s\n",str);
 
 
     json_object_put(device);
-    debug_printf("Posting %s\n",str);
   }
   json_object_put(devices);
-  debug_printf("Getting values for server DONE\n");
+  debug_printf("Getting strings for server DONE\n");
     return 0;
 }
 
@@ -421,11 +431,15 @@ int main(int argc, char *argv[]){
     
     debug_printf("Getting values for server\n");
     devices=json_object_new_object();
-    retval=sqlite3_exec(db,"SELECT * FROM stream_data WHERE is_logged=0 LIMIT 1000;",send_double_callback, &devices, &sql_err);
+    debug_printf("Getting values for server\n");
+    retval=sqlite3_exec(db,"SELECT * FROM stream_data WHERE is_logged=0 LIMIT 100;",send_double_callback, &devices, &sql_err);
+    debug_printf("Getting values for server\n");
 		if(retval != SQLITE_OK){
 			printf("Select error: %s\n",sql_err);
 		}	
+    debug_printf("Getting values for server\n");
     sqlite3_free(sql_err);
+    debug_printf("Getting values for server\n");
 
     json_object_object_foreach(devices,guid,device){
       debug_printf("Key: %s\n",guid);
